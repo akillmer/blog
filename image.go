@@ -3,9 +3,11 @@ package blog
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"image/jpeg"
 	"os"
 
+	pcolor "github.com/EdlinOrg/prominentcolor"
 	"github.com/nfnt/resize"
 	shortid "github.com/ventu-io/go-shortid"
 )
@@ -15,6 +17,7 @@ type Image struct {
 	ID      string `json:"id"`
 	Width   int    `json:"width"`
 	Height  int    `json:"height"`
+	Color   string `json:"color"`
 	preview bytes.Buffer
 }
 
@@ -35,6 +38,12 @@ func NewImage(file string) (*Image, error) {
 		Width:  img.Bounds().Dx(),
 		Height: img.Bounds().Dy(),
 	}
+
+	c := pcolor.KmeansWithArgs(pcolor.ArgumentNoCropping, img)
+	if len(c) == 0 {
+		return nil, errors.New("image has no color data")
+	}
+	bimg.Color = c[0].AsString()
 
 	preview := resize.Resize(uint(opts.ImagePreviewWidth), 0, img, resize.NearestNeighbor)
 	w := bufio.NewWriter(&bimg.preview)

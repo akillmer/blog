@@ -29,4 +29,6 @@ func TestNewImage(t *testing.T) {
 	if preview.Bounds().Dx() != opts.ImagePreviewWidth {
 		t.Errorf("preview image width should be %d, got %d", opts.ImagePreviewWidth, preview.Bounds().Dx())
 	}
+
+	t.Logf("Image color: #%s", img.Color)
 }

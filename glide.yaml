@@ -9,3 +9,7 @@ import:
   version: ^0.13.0
   subpackages:
   - storage
+- package: github.com/EdlinOrg/prominentcolor
+- package: github.com/lucasb-eyer/go-colorful
+- package: github.com/oliamb/cutter
+  version: ^0.2.0
