@@ -9,39 +9,46 @@ import (
 	"github.com/boltdb/bolt"
 )
 
-func txGetPage(id []byte, tx *bolt.Tx) (*Page, error) {
-	page := &Page{}
+// shareable transaction that returns bytes, not a struct
+func txGetPageHeader(id []byte, tx *bolt.Tx) ([]byte, error) {
+	var buf []byte
 	pageBucket := tx.Bucket([]byte("pages"))
-	buf := pageBucket.Get([]byte(id))
-	if buf == nil {
+	p := pageBucket.Get([]byte(id))
+	if p == nil {
 		return nil, ErrPageNotFound
 	}
-	if err := json.Unmarshal(buf, page); err != nil {
-		return nil, err
-	}
-	return page, nil
+	buf = make([]byte, len(p))
+	copy(buf, p)
+	return buf, nil
 }
 
-// GetPage by it's ID (URL slug)
-func GetPage(id string) (*Page, error) {
-	var page *Page
+// GetPageHeader by it's ID (URL slug)
+func GetPageHeader(id string) ([]byte, error) {
+	var buf []byte
+
 	if err := db.View(func(tx *bolt.Tx) error {
-		p, err := txGetPage([]byte(id), tx)
+		var err error
+		buf, err = txGetPageHeader([]byte(id), tx)
 		if err != nil {
 			return err
 		}
-		page = p
 		return nil
 	}); err != nil {
 		return nil, err
 	}
-	return page, nil
+
+	return buf, nil
 }
 
 // DeletePage and remove its assets from the CDN
 func DeletePage(id string) error {
-	p, err := GetPage(id)
+	buf, err := GetPageHeader(id)
 	if err != nil {
+		return err
+	}
+
+	p := &Page{}
+	if err = json.Unmarshal(buf, p); err != nil {
 		return err
 	}
 
@@ -64,8 +71,8 @@ func DeletePage(id string) error {
 	return nil
 }
 
-// SearchPages returns a slice of Pages that match keywords within the Title and Desc
-func SearchPages(keywords ...string) ([]*Page, error) {
+// SearchPages returns a slice that matches keywords within the Title and Desc
+func SearchPages(keywords ...string) ([][]byte, error) {
 	matchedIDs := make(map[string]struct{})
 
 	if err := db.View(func(tx *bolt.Tx) error {
@@ -86,16 +93,16 @@ func SearchPages(keywords ...string) ([]*Page, error) {
 		return nil, err
 	}
 
-	pages := make([]*Page, len(matchedIDs))
+	pages := make([][]byte, len(matchedIDs))
 	i := 0
 
 	if err := db.View(func(tx *bolt.Tx) error {
 		for k := range matchedIDs {
-			p, err := txGetPage([]byte(k), tx)
+			buf, err := txGetPageHeader([]byte(k), tx)
 			if err != nil {
 				return err
 			}
-			pages[i] = p
+			pages[i] = buf
 			i++
 		}
 		return nil
@@ -129,8 +136,8 @@ func AllTags() (map[string]int, error) {
 }
 
 // GetPagesByTag finds all Pages with a given tag
-func GetPagesByTag(tag string) ([]*Page, error) {
-	pages := []*Page{}
+func GetPagesByTag(tag string) ([][]byte, error) {
+	pages := [][]byte{}
 	tag = strings.ToLower(tag)
 
 	if err := db.View(func(tx *bolt.Tx) error {
@@ -140,11 +147,11 @@ func GetPagesByTag(tag string) ([]*Page, error) {
 			return nil
 		}
 		return tagBucket.ForEach(func(k, v []byte) error {
-			p, err := txGetPage(k, tx)
+			buf, err := txGetPageHeader(k, tx)
 			if err != nil {
 				return err
 			}
-			pages = append(pages, p)
+			pages = append(pages, buf)
 			return nil
 		})
 	}); err != nil {

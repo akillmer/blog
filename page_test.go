@@ -63,7 +63,7 @@ func TestPageSave(t *testing.T) {
 		}
 	}
 
-	if _, err := GetPage(page.ID); err != nil {
+	if _, err := GetPageHeader(page.ID); err != nil {
 		t.Fatal(err)
 	}
 
@@ -104,7 +104,7 @@ func TestPageDelete(t *testing.T) {
 		}
 	}
 
-	if _, err := GetPage(page.ID); err != ErrPageNotFound {
+	if _, err := GetPageHeader(page.ID); err != ErrPageNotFound {
 		t.Errorf("expected id `%s` to not be found, got %v", page.ID, err)
 	}
 

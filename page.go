@@ -40,7 +40,7 @@ var (
 	ErrPageMissingTitle = errors.New("markdown missing top level header (title)")
 	ErrPageMissingDesc  = errors.New("markdown missing second level header (description)")
 	ErrPageMissingTags  = errors.New("markdown missing tags")
-	ErrPageNotFound     = errors.New("page not found")
+	ErrPageNotFound     = errors.New("post not found")
 )
 
 // NewPage parses a blog entry for its content and metadata
@@ -199,7 +199,7 @@ func (p *Page) txDelete(tx *bolt.Tx) error {
 	return nil
 }
 
-func (p *Page) getHTML() error {
+func (p *Page) requestHTML() error {
 	reader := bytes.NewReader(p.buffer)
 	req, err := http.NewRequest("POST", "https://api.github.com/markdown/raw", reader)
 	if err != nil {
@@ -229,7 +229,7 @@ func (p *Page) getHTML() error {
 
 // Save a Page and push its assets to the CDN
 func (p *Page) Save() error {
-	err := p.getHTML()
+	err := p.requestHTML()
 	if err != nil {
 		return err
 	}
