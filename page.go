@@ -286,25 +286,3 @@ func (p *Page) Save() error {
 
 	return nil
 }
-
-// Delete a Page and remove its assets from the CDN
-func (p *Page) Delete() error {
-	err := db.Update(func(tx *bolt.Tx) error {
-		return p.txDelete(tx)
-	})
-	if err != nil {
-		return err
-	}
-
-	for _, v := range p.Images {
-		ctx := context.Background()
-		if err := storageBucket.Object(v.ID).Delete(ctx); err != nil {
-			return err
-		}
-		if err := storageBucket.Object("preview_" + v.ID).Delete(ctx); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}

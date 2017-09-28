@@ -91,7 +91,7 @@ func TestPageSave(t *testing.T) {
 }
 
 func TestPageDelete(t *testing.T) {
-	if err := page.Delete(); err != nil {
+	if err := DeletePage(page.ID); err != nil {
 		t.Fatal(err)
 	}
 

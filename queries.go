@@ -2,6 +2,7 @@ package blog
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"strings"
 
@@ -35,6 +36,32 @@ func GetPage(id string) (*Page, error) {
 		return nil, err
 	}
 	return page, nil
+}
+
+// DeletePage and remove its assets from the CDN
+func DeletePage(id string) error {
+	p, err := GetPage(id)
+	if err != nil {
+		return err
+	}
+
+	if err = db.Update(func(tx *bolt.Tx) error {
+		return p.txDelete(tx)
+	}); err != nil {
+		return err
+	}
+
+	for _, v := range p.Images {
+		ctx := context.Background()
+		if err := storageBucket.Object(v.ID).Delete(ctx); err != nil {
+			return err
+		}
+		if err := storageBucket.Object("preview_" + v.ID).Delete(ctx); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // SearchPages returns a slice of Pages that match keywords within the Title and Desc
