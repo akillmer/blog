@@ -1,0 +1,4 @@
+test.db
+vendor
+glide.lock
+.DS_Store
