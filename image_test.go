@@ -20,7 +20,7 @@ func TestNewImage(t *testing.T) {
 		t.Errorf("image height should be 408, got %d", img.Height)
 	}
 
-	r := bufio.NewReader(&img.preview)
+	r := bufio.NewReader(&img.buffer)
 	preview, err := jpeg.Decode(r)
 	if err != nil {
 		t.Fatal(err)

@@ -14,11 +14,11 @@ import (
 
 // Image data associated with a blog entry
 type Image struct {
-	ID      string `json:"id"`
-	Width   int    `json:"width"`
-	Height  int    `json:"height"`
-	Color   string `json:"color"`
-	preview bytes.Buffer
+	ID     string `json:"id"`
+	Width  int    `json:"width"`
+	Height int    `json:"height"`
+	Color  string `json:"color"`
+	buffer bytes.Buffer
 }
 
 // NewImage analyzes the image for color and dimensions
@@ -46,7 +46,7 @@ func NewImage(file string) (*Image, error) {
 	bimg.Color = c[0].AsString()
 
 	preview := resize.Resize(uint(opts.ImagePreviewWidth), 0, img, resize.NearestNeighbor)
-	w := bufio.NewWriter(&bimg.preview)
+	w := bufio.NewWriter(&bimg.buffer)
 	if err = jpeg.Encode(w, preview, nil); err != nil {
 		return nil, err
 	}

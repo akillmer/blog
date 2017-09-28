@@ -272,7 +272,7 @@ func (p *Page) Save() error {
 		w.Close()
 
 		// upload the preview image
-		r := bufio.NewReader(&v.preview)
+		r := bufio.NewReader(&v.buffer)
 		w = storageBucket.Object("preview_" + v.ID).NewWriter(ctx)
 		w.ACL = []storage.ACLRule{{Entity: storage.AllUsers, Role: storage.RoleReader}}
 		w.ContentType = "image/jpeg"
