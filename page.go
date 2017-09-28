@@ -43,13 +43,25 @@ var (
 	ErrPageNotFound     = errors.New("post not found")
 )
 
-// NewPage parses a blog entry for its content and metadata
-func NewPage(file string) (*Page, error) {
-	buf, err := ioutil.ReadFile(file)
+// NewPage parses a page's folder for its content and metadata
+func NewPage(pathToDir string) (*Page, error) {
+	allFiles, err := ioutil.ReadDir(pathToDir)
 	if err != nil {
 		return nil, err
 	}
-	page := &Page{ID: path.Dir(file)}
+
+	var mdFile string
+	for _, f := range allFiles {
+		if path.Ext(f.Name()) == ".md" {
+			mdFile = path.Join(pathToDir, f.Name())
+		}
+	}
+
+	buf, err := ioutil.ReadFile(mdFile)
+	if err != nil {
+		return nil, err
+	}
+	page := &Page{ID: path.Base(pathToDir)}
 
 	title := rePageTitle.FindSubmatch(buf)
 	if title == nil {
@@ -79,7 +91,7 @@ func NewPage(file string) (*Page, error) {
 			}
 
 			if _, exists := page.Images[origName]; exists == false {
-				img, err := NewImage(path.Join(path.Dir(file), origName))
+				img, err := NewImage(path.Join(pathToDir, origName))
 
 				if err != nil {
 					return nil, err

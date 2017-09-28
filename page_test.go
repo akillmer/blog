@@ -8,7 +8,7 @@ import (
 var page *Page
 
 func TestPageMarkdown(t *testing.T) {
-	p, err := NewPage("./blog-test/content.md")
+	p, err := NewPage("./blog-test")
 	if err != nil {
 		t.Fatal(err)
 	}
