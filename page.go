@@ -265,7 +265,7 @@ func (p *Page) Save() error {
 	}
 
 	for k, v := range p.Images {
-		f, err := os.Open(path.Join(opts.BlogDir, p.ID, k))
+		f, err := os.Open(path.Join(opts.RepoDir, p.ID, k))
 		if err != nil {
 			return err
 		}

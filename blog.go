@@ -9,7 +9,7 @@ import (
 
 type Options struct {
 	DB                string
-	BlogDir           string
+	RepoDir           string
 	StorageBucket     string
 	ImagePreviewWidth int
 }

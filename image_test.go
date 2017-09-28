@@ -7,7 +7,7 @@ import (
 )
 
 func TestNewImage(t *testing.T) {
-	img, err := NewImage("./blog-test/sample_a.jpg")
+	img, err := NewImage("./repo-test/blog-test/sample_a.jpg")
 	if err != nil {
 		t.Fatal(err)
 	}
