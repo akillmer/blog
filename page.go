@@ -54,6 +54,7 @@ func NewPage(pathToDir string) (*Page, error) {
 	for _, f := range allFiles {
 		if path.Ext(f.Name()) == ".md" {
 			mdFile = path.Join(pathToDir, f.Name())
+			break
 		}
 	}
 
