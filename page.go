@@ -24,7 +24,6 @@ import (
 type Page struct {
 	ID        string            `json:"id"`
 	Published string            `json:"published"`
-	Modified  string            `json:"modified"`
 	Title     string            `json:"title"`
 	Desc      string            `json:"desc"`
 	Tags      []string          `json:"tags"`
@@ -248,15 +247,9 @@ func (p *Page) Save() error {
 	}
 
 	if err = db.Update(func(tx *bolt.Tx) error {
-		timestamp := time.Now().Format(time.RFC3339)
-		if err := p.txDelete(tx); err == nil {
-			// this is a modified page
-			p.Modified = timestamp
-		} else if err == ErrPageNotFound {
-			// this is a new page
-			p.Published = timestamp
-		} else {
-			// something bad happened
+		p.Published = time.Now().Format(time.RFC3339)
+		err := p.txDelete(tx)
+		if err != nil && err != ErrPageNotFound {
 			return err
 		}
 		return p.txPut(tx)
