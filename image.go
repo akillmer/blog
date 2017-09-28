@@ -1,21 +1,24 @@
 package blog
 
 import (
+	"bufio"
 	"bytes"
-	"image"
 	"image/jpeg"
 	"os"
 
 	"github.com/nfnt/resize"
+	shortid "github.com/ventu-io/go-shortid"
 )
 
 // Image data associated with a blog entry
 type Image struct {
-	Width, Height int
-	Preview       *bytes.Buffer
+	ID      string `json:"id"`
+	Width   int    `json:"width"`
+	Height  int    `json:"height"`
+	preview bytes.Buffer
 }
 
-// NewImage analyzes the image for color, dimensions, and saves a preview image to a buffer
+// NewImage analyzes the image for color and dimensions
 func NewImage(file string) (*Image, error) {
 	f, err := os.Open(file)
 	if err != nil {
@@ -23,21 +26,33 @@ func NewImage(file string) (*Image, error) {
 	}
 	defer f.Close()
 
-	img, _, err := image.Decode(f)
+	img, err := jpeg.Decode(f)
 	if err != nil {
 		return nil, err
 	}
 
 	bimg := &Image{
-		Preview: new(bytes.Buffer),
-		Width:   img.Bounds().Dx(),
-		Height:  img.Bounds().Dy(),
+		Width:  img.Bounds().Dx(),
+		Height: img.Bounds().Dy(),
 	}
 
 	preview := resize.Resize(uint(opts.ImagePreviewWidth), 0, img, resize.NearestNeighbor)
-	if err = jpeg.Encode(bimg.Preview, preview, nil); err != nil {
+	w := bufio.NewWriter(&bimg.preview)
+	if err = jpeg.Encode(w, preview, nil); err != nil {
 		return nil, err
 	}
 
+	sid, err := shortid.Generate()
+	if err != nil {
+		return nil, err
+	}
+
+	bimg.ID = sid + ".jpg"
+
 	return bimg, nil
+}
+
+// URL of the Image via Google Cloud Storage
+func (i *Image) URL() string {
+	return cdnURL + "/" + i.ID
 }

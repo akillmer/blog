@@ -12,7 +12,7 @@ func TestBlogInit(t *testing.T) {
 
 	options := &Options{
 		DB:                "./test.db",
-		BlogFolder:        "./",
+		BlogDir:           "./",
 		StorageBucket:     "blog-media",
 		ImagePreviewWidth: 80,
 	}

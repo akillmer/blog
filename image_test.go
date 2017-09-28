@@ -1,11 +1,12 @@
 package blog
 
 import (
+	"bufio"
 	"image/jpeg"
 	"testing"
 )
 
-func TestImage(t *testing.T) {
+func TestNewImage(t *testing.T) {
 	img, err := NewImage("./blog-test/sample_a.jpg")
 	if err != nil {
 		t.Fatal(err)
@@ -19,7 +20,8 @@ func TestImage(t *testing.T) {
 		t.Errorf("image height should be 408, got %d", img.Height)
 	}
 
-	preview, err := jpeg.Decode(img.Preview)
+	r := bufio.NewReader(&img.preview)
+	preview, err := jpeg.Decode(r)
 	if err != nil {
 		t.Fatal(err)
 	}

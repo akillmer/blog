@@ -9,7 +9,7 @@ import (
 
 type Options struct {
 	DB                string
-	BlogFolder        string
+	BlogDir           string
 	StorageBucket     string
 	ImagePreviewWidth int
 }
@@ -19,7 +19,7 @@ var (
 	opts          *Options
 	storageBucket *storage.BucketHandle
 	cdnURL        string
-	storageMaxAge = 86400
+	storageMaxAge = 86400 // gets set to 0 when testing (via TestBlogInit)
 )
 
 // Init the Blog package with passed Options

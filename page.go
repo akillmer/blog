@@ -1,6 +1,7 @@
 package blog
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -17,7 +18,6 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/boltdb/bolt"
-	"github.com/ventu-io/go-shortid"
 )
 
 // Page contains content and metadata
@@ -28,7 +28,7 @@ type Page struct {
 	Title     string            `json:"title"`
 	Desc      string            `json:"desc"`
 	Tags      []string          `json:"tags"`
-	Images    map[string]string `json:"images"`
+	Images    map[string]*Image `json:"images"`
 	Content   []byte            `json:"content"`
 }
 
@@ -78,7 +78,7 @@ func NewPage(file string) (*Page, error) {
 
 	images := rePageImages.FindAllSubmatch(buf, -1)
 	if images != nil {
-		page.Images = make(map[string]string, len(images))
+		page.Images = make(map[string]*Image, len(images))
 
 		for i := range images {
 			origName := string(images[i][1])
@@ -88,15 +88,13 @@ func NewPage(file string) (*Page, error) {
 			}
 
 			if _, exists := page.Images[origName]; exists == false {
-				sid, err := shortid.Generate()
+				img, err := NewImage(path.Join(path.Dir(file), origName))
+
 				if err != nil {
 					return nil, err
 				}
-
-				page.Images[origName] = sid + ".jpg"
-				// update the blog's content to point to the image's future URL via CDN
-				imageURL := fmt.Sprintf(cdnURL+"/%s", sid)
-				buf = bytes.Replace(buf, []byte(origName), []byte(imageURL), -1)
+				page.Images[origName] = img
+				buf = bytes.Replace(buf, []byte(origName), []byte(img.URL()), -1)
 			}
 		}
 	}
@@ -253,14 +251,14 @@ func (p *Page) Save() error {
 	}
 
 	for k, v := range p.Images {
-		pathToFile := path.Join(opts.BlogFolder, p.ID, k)
-		f, err := os.Open(pathToFile)
+		f, err := os.Open(path.Join(opts.BlogDir, p.ID, k))
 		if err != nil {
 			return err
 		}
 
+		// upload the high res image
 		ctx := context.Background()
-		w := storageBucket.Object(v).NewWriter(ctx)
+		w := storageBucket.Object(v.ID).NewWriter(ctx)
 		w.ACL = []storage.ACLRule{{Entity: storage.AllUsers, Role: storage.RoleReader}}
 		w.ContentType = "image/jpeg"
 		w.CacheControl = fmt.Sprintf("public, max-age=%d", storageMaxAge)
@@ -270,6 +268,18 @@ func (p *Page) Save() error {
 		}
 
 		f.Close()
+		w.Close()
+
+		// upload the preview image
+		r := bufio.NewReader(&v.preview)
+		w = storageBucket.Object("preview_" + v.ID).NewWriter(ctx)
+		w.ACL = []storage.ACLRule{{Entity: storage.AllUsers, Role: storage.RoleReader}}
+		w.ContentType = "image/jpeg"
+		w.CacheControl = fmt.Sprintf("public, max-age=%d", storageMaxAge)
+		if _, err = io.Copy(w, r); err != nil {
+			return err
+		}
+
 		w.Close()
 	}
 
@@ -287,7 +297,10 @@ func (p *Page) Delete() error {
 
 	for _, v := range p.Images {
 		ctx := context.Background()
-		if err := storageBucket.Object(v).Delete(ctx); err != nil {
+		if err := storageBucket.Object(v.ID).Delete(ctx); err != nil {
+			return err
+		}
+		if err := storageBucket.Object("preview_" + v.ID).Delete(ctx); err != nil {
 			return err
 		}
 	}

@@ -55,12 +55,11 @@ func TestPageSave(t *testing.T) {
 	}
 
 	for k, v := range page.Images {
-		imageURL := cdnURL + "/" + v
-		resp, err := http.Get(imageURL)
+		resp, err := http.Get(v.URL())
 		if err != nil {
-			t.Errorf("got error requesting `%s` (%s): %v", v, k, err)
+			t.Errorf("got error requesting `%s` (%s): %v", v.ID, k, err)
 		} else if resp.StatusCode != http.StatusOK {
-			t.Errorf("expected 200 for `%s` (%s), got `%s`", v, k, resp.Status)
+			t.Errorf("expected 200 for `%s` (%s), got `%s`", v.ID, k, resp.Status)
 		}
 	}
 
@@ -97,12 +96,11 @@ func TestPageDelete(t *testing.T) {
 	}
 
 	for k, v := range page.Images {
-		imageURL := cdnURL + "/" + v
-		resp, err := http.Get(imageURL)
+		resp, err := http.Get(v.URL())
 		if err != nil {
-			t.Errorf("got error requesting `%s` (%s): %v", v, k, err)
+			t.Errorf("got error requesting `%s` (%s): %v", v.ID, k, err)
 		} else if resp.StatusCode == http.StatusOK {
-			t.Errorf("expected `%s` (%s) to be unavailable, got 200 OK", v, k)
+			t.Errorf("expected `%s` (%s) to be unavailable, got 200 OK", v.ID, k)
 		}
 	}
 
