@@ -43,6 +43,9 @@ func Init(options *Options) error {
 		if _, err := tx.CreateBucketIfNotExists([]byte("pages")); err != nil {
 			return err
 		}
+		if _, err := tx.CreateBucketIfNotExists([]byte("html")); err != nil {
+			return err
+		}
 		if _, err := tx.CreateBucketIfNotExists([]byte("tags")); err != nil {
 			return err
 		}

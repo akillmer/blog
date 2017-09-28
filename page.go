@@ -29,16 +29,7 @@ type Page struct {
 	Desc      string            `json:"desc"`
 	Tags      []string          `json:"tags"`
 	Images    map[string]*Image `json:"images"`
-	Content   []byte            `json:"content"`
-}
-
-// PagePreview contains the minimum amount of content/metdata
-type PagePreview struct {
-	ID        string `json:"id"`
-	Published string `json:"published"`
-	Title     string `json:"title"`
-	Desc      string `json:"desc"`
-	Image     string `json:"image"`
+	buffer    []byte
 }
 
 var (
@@ -111,7 +102,7 @@ func NewPage(file string) (*Page, error) {
 		}
 	}
 
-	page.Content = buf
+	page.buffer = buf
 
 	return page, nil
 }
@@ -124,6 +115,11 @@ func (p *Page) txPut(tx *bolt.Tx) error {
 
 	pageBucket := tx.Bucket([]byte("pages"))
 	if err := pageBucket.Put([]byte(p.ID), buf); err != nil {
+		return err
+	}
+
+	htmlBucket := tx.Bucket([]byte("html"))
+	if err := htmlBucket.Put([]byte(p.ID), p.buffer); err != nil {
 		return err
 	}
 
@@ -166,6 +162,11 @@ func (p *Page) txDelete(tx *bolt.Tx) error {
 		return err
 	}
 
+	htmlBucket := tx.Bucket([]byte("html"))
+	if err := htmlBucket.Delete([]byte(p.ID)); err != nil {
+		return err
+	}
+
 	tagBucket := tx.Bucket([]byte("tags"))
 	for _, tag := range p.Tags {
 		b := tagBucket.Bucket([]byte(tag))
@@ -199,7 +200,7 @@ func (p *Page) txDelete(tx *bolt.Tx) error {
 }
 
 func (p *Page) getHTML() error {
-	reader := bytes.NewReader(p.Content)
+	reader := bytes.NewReader(p.buffer)
 	req, err := http.NewRequest("POST", "https://api.github.com/markdown/raw", reader)
 	if err != nil {
 		return err
@@ -218,7 +219,7 @@ func (p *Page) getHTML() error {
 		return fmt.Errorf("%d: %s", resp.StatusCode, resp.Status)
 	}
 
-	p.Content, err = ioutil.ReadAll(resp.Body)
+	p.buffer, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
