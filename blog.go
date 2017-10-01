@@ -2,6 +2,7 @@ package blog
 
 import (
 	"context"
+	"time"
 
 	"cloud.google.com/go/storage"
 	"github.com/boltdb/bolt"
@@ -57,4 +58,9 @@ func Init(options *Options) error {
 		}
 		return nil
 	})
+}
+
+// DateFormat returns the time in RFC3339 format
+func DateFormat(t time.Time) string {
+	return t.Format(time.RFC3339)
 }

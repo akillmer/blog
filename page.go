@@ -14,7 +14,6 @@ import (
 	"path"
 	"regexp"
 	"strings"
-	"time"
 
 	"cloud.google.com/go/storage"
 	"github.com/boltdb/bolt"
@@ -39,7 +38,8 @@ var (
 	ErrPageMissingTitle = errors.New("markdown missing top level header (title)")
 	ErrPageMissingDesc  = errors.New("markdown missing second level header (description)")
 	ErrPageMissingTags  = errors.New("markdown missing tags")
-	ErrPageNotFound     = errors.New("post not found")
+	ErrPageNotFound     = errors.New("page not found")
+	ErrMarkdownMissing  = errors.New("missing markdown file")
 )
 
 // NewPage parses a page's folder for its content and metadata
@@ -49,19 +49,27 @@ func NewPage(pathToDir string) (*Page, error) {
 		return nil, err
 	}
 
-	var mdFile string
+	var mdFile, modtime string
 	for _, f := range allFiles {
 		if path.Ext(f.Name()) == ".md" {
 			mdFile = path.Join(pathToDir, f.Name())
+			modtime = DateFormat(f.ModTime())
 			break
 		}
+	}
+
+	if mdFile == "" {
+		return nil, ErrMarkdownMissing
 	}
 
 	buf, err := ioutil.ReadFile(mdFile)
 	if err != nil {
 		return nil, err
 	}
-	page := &Page{ID: path.Base(pathToDir)}
+	page := &Page{
+		ID:        path.Base(pathToDir),
+		Published: modtime,
+	}
 
 	title := rePageTitle.FindSubmatch(buf)
 	if title == nil {
@@ -247,7 +255,6 @@ func (p *Page) Save() error {
 	}
 
 	if err = db.Update(func(tx *bolt.Tx) error {
-		p.Published = time.Now().Format(time.RFC3339)
 		err := p.txDelete(tx)
 		if err != nil && err != ErrPageNotFound {
 			return err
